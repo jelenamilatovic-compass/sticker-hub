@@ -6,4 +6,4 @@ pages_build_output_dir = "."
 # Nakon kreiranja namespace-a, zalijepi ID ovdje (ili podesi u Cloudflare dashboard-u)
 [[kv_namespaces]]
 binding = "STICKERS"
-id = "ZAMIJENI_OVDJE_KV_ID"
+id = "abfb2a5537204c67aeb05f70e59bfaa6"
