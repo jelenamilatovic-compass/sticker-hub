@@ -131,24 +131,41 @@
   button.small { padding: 6px 14px; font-size: 0.85rem; }
 
   .auth-screen {
-    max-width: 500px;
+    max-width: 520px;
     margin: 0 auto;
   }
-  .auth-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-  .auth-tab {
-    flex: 1;
-    background: rgba(255,255,255,0.15);
-    border: 2px solid rgba(255,255,255,0.3);
-    color: #fff;
-    padding: 12px;
-    border-radius: 10px 10px 0 0;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 1rem;
+  .auth-card h2 { margin-bottom: 12px; }
+  .auth-card-compact { padding-top: 20px; padding-bottom: 20px; }
+  .auth-card-compact h2 { font-size: 1.2rem; }
+
+  .auth-divider {
+    text-align: center;
+    margin: 18px 0;
+    position: relative;
+    color: rgba(255,255,255,0.8);
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
   }
-  .auth-tab.active { background: #fff; color: #1e3c72; border-color: #fff; }
-  .auth-form { display: none; }
-  .auth-form.active { display: block; }
+  .auth-divider span {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    padding: 6px 18px;
+    border-radius: 20px;
+    border: 2px solid rgba(255,255,255,0.3);
+    display: inline-block;
+  }
+  .auth-divider::before,
+  .auth-divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 30%;
+    height: 2px;
+    background: rgba(255,255,255,0.2);
+  }
+  .auth-divider::before { left: 0; }
+  .auth-divider::after { right: 0; }
 
   .pin-input {
     letter-spacing: 12px;
@@ -342,58 +359,61 @@
     </div>
   </section>
 
-  <!-- ========== AUTH: LOGIN ILI REGISTRACIJA ========== -->
+  <!-- ========== AUTH: LOGIN ILI REGISTRACIJA (obje vidljive) ========== -->
   <section class="page" id="page-auth">
     <div class="auth-screen">
-      <div class="card">
-        <div class="auth-tabs">
-          <button class="auth-tab active" onclick="switchAuth('login')">🔑 Već imam nalog</button>
-          <button class="auth-tab" onclick="switchAuth('register')">✨ Prvi put</button>
+
+      <!-- REGISTER (prvi put — gore, prominentnije) -->
+      <div class="card auth-card">
+        <h2>✨ Prvi put? Napravi nalog</h2>
+        <div id="regError"></div>
+        <div class="info-msg">
+          👋 Ime se vidi drugarima. Telefon roditelja samo admin vidi (za slučaj problema).
         </div>
 
-        <!-- LOGIN -->
-        <div class="auth-form active" id="form-login">
-          <div id="loginError"></div>
-          <label for="loginName">Nadimak:</label>
-          <input id="loginName" type="text" placeholder="npr. Luka" maxlength="30" autocomplete="off" />
+        <label for="regName">Nadimak (kako te zovu drugari):</label>
+        <input id="regName" type="text" placeholder="npr. Luka" maxlength="30" autocomplete="off" />
 
-          <label for="loginPin">PIN (4 cifre):</label>
-          <input id="loginPin" type="password" inputmode="numeric" maxlength="4" class="pin-input" placeholder="••••" />
+        <label for="regPhone">Telefon roditelja:</label>
+        <small>📞 Samo admin vidi. Za slučaj problema.</small>
+        <input id="regPhone" type="tel" placeholder="+382 67 123 456" maxlength="25" />
 
-          <button id="loginBtn" onclick="doLogin()">🔑 Uđi u hub</button>
+        <label for="regPin">PIN (4 cifre — pamti ga!):</label>
+        <small>🔒 S ovim PIN-om mijenjaš svoju listu.</small>
+        <input id="regPin" type="password" inputmode="numeric" maxlength="4" class="pin-input" placeholder="••••" />
+
+        <label for="regPin2">Ponovi PIN:</label>
+        <input id="regPin2" type="password" inputmode="numeric" maxlength="4" class="pin-input" placeholder="••••" />
+
+        <div class="checkbox-row">
+          <input id="regAgree" type="checkbox" />
+          <label for="regAgree">
+            ✅ Roditelj mi je dozvolio da koristim hub i zna da sam ostavio njegov telefon.
+          </label>
         </div>
 
-        <!-- REGISTER -->
-        <div class="auth-form" id="form-register">
-          <div id="regError"></div>
-          <div class="info-msg">
-            👋 Prvi put? Napravi svoj profil za hub. Ime se vidi drugarima, telefon roditelja samo administratoru za slučaj problema.
-          </div>
-
-          <label for="regName">Nadimak (kako te zovu drugari):</label>
-          <input id="regName" type="text" placeholder="npr. Luka" maxlength="30" autocomplete="off" />
-
-          <label for="regPhone">Telefon roditelja:</label>
-          <small>📞 Samo admin ovo vidi. Za slučaj da nešto treba riješiti.</small>
-          <input id="regPhone" type="tel" placeholder="+382 67 123 456" maxlength="25" />
-
-          <label for="regPin">PIN (4 cifre — pamti ga!):</label>
-          <small>🔒 Samo s ovim PIN-om možeš da mijenjaš svoju listu.</small>
-          <input id="regPin" type="password" inputmode="numeric" maxlength="4" class="pin-input" placeholder="••••" />
-
-          <label for="regPin2">Ponovi PIN:</label>
-          <input id="regPin2" type="password" inputmode="numeric" maxlength="4" class="pin-input" placeholder="••••" />
-
-          <div class="checkbox-row">
-            <input id="regAgree" type="checkbox" />
-            <label for="regAgree">
-              ✅ Roditelj mi je dozvolio da koristim hub i zna da sam ostavio njegov telefon.
-            </label>
-          </div>
-
-          <button id="regBtn" onclick="doRegister()">✨ Napravi nalog</button>
-        </div>
+        <button id="regBtn" onclick="doRegister()">✨ Napravi nalog</button>
       </div>
+
+      <!-- DIVIDER -->
+      <div class="auth-divider">
+        <span>ili</span>
+      </div>
+
+      <!-- LOGIN (već imam nalog — dolje) -->
+      <div class="card auth-card auth-card-compact">
+        <h2>🔑 Već imam nalog</h2>
+        <div id="loginError"></div>
+
+        <label for="loginName">Nadimak:</label>
+        <input id="loginName" type="text" placeholder="npr. Luka" maxlength="30" autocomplete="off" />
+
+        <label for="loginPin">PIN (4 cifre):</label>
+        <input id="loginPin" type="password" inputmode="numeric" maxlength="4" class="pin-input" placeholder="••••" />
+
+        <button id="loginBtn" onclick="doLogin()">🔑 Uđi u hub</button>
+      </div>
+
     </div>
   </section>
 
@@ -642,13 +662,6 @@
       clubCode = '';
       showError('gateError', 'Pogrešan kod ili nema interneta.');
     }
-  }
-
-  function switchAuth(which) {
-    document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
-    document.querySelector(`.auth-tab:nth-child(${which === 'login' ? 1 : 2})`).classList.add('active');
-    document.getElementById('form-' + which).classList.add('active');
   }
 
   async function doLogin() {
