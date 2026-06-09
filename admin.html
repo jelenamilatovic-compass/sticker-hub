@@ -199,6 +199,16 @@
     </div>
 
     <div id="tableContainer"></div>
+
+    <div class="card" style="margin-top:30px;">
+      <h2>💬 Chat — moderacija</h2>
+      <p style="color:#636e72; margin-bottom:15px;">Sve poruke iz huba. Klik 🗑️ za pojedinačno brisanje, ili "Obriši sve" za reset.</p>
+      <div style="margin-bottom:15px; display:flex; gap:10px;">
+        <button onclick="refreshMessages()">🔄 Osvježi chat</button>
+        <button class="danger small" onclick="clearAllMessages()">🗑️ Obriši sve poruke</button>
+      </div>
+      <div id="messagesContainer"></div>
+    </div>
   </section>
 
 </div>
@@ -260,6 +270,7 @@
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('dashboard').style.display = 'block';
     await refresh();
+    await refreshMessages();
   }
 
   async function refresh() {
@@ -355,6 +366,88 @@
   }
   function escapeJs(s) {
     return String(s).replace(/'/g, "\\'");
+  }
+
+  // ====== CHAT MODERATION ======
+  let chatMessages = [];
+
+  async function refreshMessages() {
+    try {
+      const res = await fetch(API + '/messages', {
+        headers: { 'X-Admin-Pass': adminPass },
+        cache: 'no-store',
+      });
+      if (res.status === 401) { logout(); return; }
+      const data = await res.json();
+      chatMessages = data.messages || [];
+      renderMessages();
+    } catch (err) {
+      toast('Greška chat: ' + err.message, true);
+    }
+  }
+
+  function renderMessages() {
+    const el = document.getElementById('messagesContainer');
+    if (chatMessages.length === 0) {
+      el.innerHTML = '<div class="empty"><p>Nema poruka.</p></div>';
+      return;
+    }
+    // Newest first for moderation
+    const arr = chatMessages.slice().reverse();
+    el.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Vrijeme</th>
+            <th>Od koga</th>
+            <th>Poruka</th>
+            <th>Akcija</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${arr.map(m => `
+            <tr>
+              <td class="date-cell">${formatDate(m.ts)}</td>
+              <td class="name-cell">${escapeHtml(m.from)}</td>
+              <td>${escapeHtml(m.text)}</td>
+              <td><button class="danger small" onclick="deleteMessage('${escapeJs(m.id)}')">🗑️</button></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  async function deleteMessage(id) {
+    if (!confirm('Obrisati ovu poruku?')) return;
+    try {
+      const res = await fetch(API + '/messages?id=' + encodeURIComponent(id), {
+        method: 'DELETE',
+        headers: { 'X-Admin-Pass': adminPass },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Greška');
+      toast('🗑️ Poruka obrisana');
+      await refreshMessages();
+    } catch (err) {
+      toast('Greška: ' + err.message, true);
+    }
+  }
+
+  async function clearAllMessages() {
+    if (!confirm('OBRISATI SVE PORUKE iz chata? Ovo se ne može vratiti.')) return;
+    try {
+      const res = await fetch(API + '/messages?all=true', {
+        method: 'DELETE',
+        headers: { 'X-Admin-Pass': adminPass },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Greška');
+      toast('🗑️ Sve poruke obrisane');
+      await refreshMessages();
+    } catch (err) {
+      toast('Greška: ' + err.message, true);
+    }
   }
 
   // Auto-login if stored

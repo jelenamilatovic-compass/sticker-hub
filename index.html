@@ -320,11 +320,63 @@
     border-left: 4px solid #74b9ff;
   }
 
+  /* CHAT */
+  .chat-messages {
+    height: 420px;
+    overflow-y: auto;
+    background: #f5f7fa;
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 15px;
+    border: 1px solid #dfe6e9;
+    scroll-behavior: smooth;
+  }
+  .chat-msg {
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    background: #fff;
+    border-radius: 8px;
+    border-left: 3px solid #74b9ff;
+    animation: msgPop 0.2s ease-out;
+  }
+  @keyframes msgPop { from {opacity:0; transform: translateY(5px);} to {opacity:1; transform: translateY(0);} }
+  .chat-msg.mine {
+    background: linear-gradient(135deg, #e6fff5, #d4f7e8);
+    border-left-color: #00b894;
+  }
+  .chat-msg .meta {
+    font-size: 0.78rem;
+    color: #636e72;
+    margin-bottom: 3px;
+  }
+  .chat-msg .meta b { color: #1e3c72; font-size: 0.85rem; }
+  .chat-msg.mine .meta b { color: #00b894; }
+  .chat-msg .text { word-break: break-word; line-height: 1.4; }
+  .chat-input-row {
+    display: flex;
+    gap: 10px;
+  }
+  .chat-input-row input {
+    flex: 1;
+    margin-bottom: 0;
+  }
+  .chat-input-row button { flex-shrink: 0; }
+  .chat-rules {
+    background: #fff8dc;
+    color: #2d3436;
+    padding: 10px 15px;
+    border-radius: 8px;
+    border-left: 4px solid #fdcb6e;
+    font-size: 0.85rem;
+    margin-bottom: 15px;
+  }
+
   @media (max-width: 600px) {
     header h1 { font-size: 1.8rem; }
     .tab { padding: 10px 14px; font-size: 0.9rem; }
     .swap-arrow { display: block; text-align: center; margin: 5px 0; }
     .top-bar { position: static; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
+    .chat-messages { height: 320px; }
   }
 </style>
 </head>
@@ -423,6 +475,7 @@
       <button class="tab active" data-page="mylist">📝 Moja lista</button>
       <button class="tab" data-page="players">👥 Igrači</button>
       <button class="tab" data-page="matches">🤝 Trampe</button>
+      <button class="tab" data-page="chat">💬 Chat</button>
       <button class="tab" data-page="trending">🔥 Trending</button>
     </div>
 
@@ -481,6 +534,22 @@
       <div id="matchesList"></div>
     </section>
 
+    <!-- CHAT -->
+    <section class="hub-page" id="hub-chat">
+      <div class="card">
+        <h2>💬 Chat — pišite drugarima</h2>
+        <p style="color:#636e72; margin-bottom:10px;">Dogovori trampu, javi šta tražiš, ili samo pitaj. Svi drugari vide chat.</p>
+        <div class="chat-rules">
+          📜 <b>Lijepo se ponašaj:</b> bez ružnih riječi, bez ličnih podataka, admin sve vidi i može da briše. Sačekaj 3 sek između poruka.
+        </div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input-row">
+          <input id="chatInput" type="text" placeholder="Napiši poruku..." maxlength="280" />
+          <button id="chatSendBtn" onclick="sendMessage()">Pošalji ➤</button>
+        </div>
+      </div>
+    </section>
+
     <!-- TRENDING -->
     <section class="hub-page" id="hub-trending">
       <div class="card">
@@ -518,6 +587,9 @@
   let me = null; // { name, pin }
   try { me = JSON.parse(localStorage.getItem(LS_ME) || 'null'); } catch(e) { me = null; }
   let allPlayers = {};
+  let chatMessages = [];
+  let chatPollTimer = null;
+  let lastSentText = '';
   let pollTimer = null;
 
   // ====== UI ======
@@ -566,6 +638,12 @@
   }
   function initials(name) {
     return name.split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0,2);
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function formatTime(ts) {
+    return new Date(ts).toLocaleTimeString('sr-Latn-ME', { hour: '2-digit', minute: '2-digit' });
   }
 
   // ====== API ======
@@ -637,6 +715,32 @@
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Greška pri brisanju');
+    return data;
+  }
+
+  async function apiGetMessages() {
+    try {
+      const res = await fetch(API + '/messages', {
+        headers: { 'X-Club-Code': clubCode },
+        cache: 'no-store',
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      chatMessages = data.messages || [];
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  async function apiSendMessage(text) {
+    const res = await fetch(API + '/messages', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ name: me.name, pin: me.pin, text }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Greška pri slanju');
     return data;
   }
 
@@ -731,6 +835,7 @@
     loadMyData();
     refreshAll();
     startPolling();
+    startChatPolling();
   }
 
   function loadMyData() {
@@ -777,9 +882,80 @@
   document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', async () => {
       showHubPage(tab.dataset.page);
-      await apiGet();
-      renderAll();
+      if (tab.dataset.page === 'chat') {
+        await apiGetMessages();
+        renderChat(true);
+      } else {
+        await apiGet();
+        renderAll();
+      }
     });
+  });
+
+  // ====== CHAT ======
+  function renderChat(scrollToBottom) {
+    const el = document.getElementById('chatMessages');
+    if (!chatMessages || chatMessages.length === 0) {
+      el.innerHTML = '<div class="empty" style="background:transparent; border:none; padding:30px;"><div class="empty-icon" style="color:#74b9ff;">💬</div><p style="color:#636e72;">Nijedna poruka još. Budi prvi!</p></div>';
+      return;
+    }
+    const wasNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+    el.innerHTML = chatMessages.map(m => {
+      const isMine = me && m.from && m.from.toLowerCase() === me.name.toLowerCase();
+      return `
+        <div class="chat-msg ${isMine ? 'mine' : ''}">
+          <div class="meta"><b>${escapeHtml(m.from)}</b> · ${formatTime(m.ts)}</div>
+          <div class="text">${escapeHtml(m.text)}</div>
+        </div>
+      `;
+    }).join('');
+    if (scrollToBottom || wasNearBottom) {
+      el.scrollTop = el.scrollHeight;
+    }
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    if (!text) return;
+    if (text === lastSentText) return;
+
+    const btn = document.getElementById('chatSendBtn');
+    btn.disabled = true;
+    btn.textContent = '...';
+    try {
+      await apiSendMessage(text);
+      lastSentText = text;
+      input.value = '';
+      await apiGetMessages();
+      renderChat(true);
+      setTimeout(() => { lastSentText = ''; }, 2000);
+    } catch (err) {
+      toast('❌ ' + err.message, true);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Pošalji ➤';
+      input.focus();
+    }
+  }
+
+  function startChatPolling() {
+    if (chatPollTimer) clearInterval(chatPollTimer);
+    chatPollTimer = setInterval(async () => {
+      if (document.hidden) return;
+      const chatActive = document.getElementById('hub-chat')?.classList.contains('active');
+      if (!chatActive) return;
+      const ok = await apiGetMessages();
+      if (ok) renderChat(false);
+    }, 5000);
+  }
+
+  // Enter to send (Shift+Enter for newline doesn't apply — single line input)
+  document.getElementById('chatInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      sendMessage();
+    }
   });
 
   // ====== RENDER ======

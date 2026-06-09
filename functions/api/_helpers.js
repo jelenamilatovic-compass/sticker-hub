@@ -1,6 +1,8 @@
 // Shared helpers for all API routes
 
 export const STORAGE_KEY = 'all_players_v2'; // bumped to v2 for new schema
+export const MSG_KEY = 'messages_v1';
+export const MAX_MSGS = 300;
 
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
