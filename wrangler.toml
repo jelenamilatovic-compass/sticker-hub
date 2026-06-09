@@ -2,8 +2,11 @@ name = "sticker-hub"
 compatibility_date = "2025-01-01"
 pages_build_output_dir = "."
 
+# Public vars (vidljivi u repo-u — OK jer su namijenjeni za dijeljenje grupi)
+[vars]
+CLUB_CODE = "slicice2026"
+
 # KV namespace za podatke o igračima
-# Nakon kreiranja namespace-a, zalijepi ID ovdje (ili podesi u Cloudflare dashboard-u)
 [[kv_namespaces]]
 binding = "STICKERS"
 id = "abfb2a5537204c67aeb05f70e59bfaa6"

@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="sr-Latn-ME">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin — Sličica Hub</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: linear-gradient(135deg, #2d3436 0%, #1e3c72 100%);
+    min-height: 100vh;
+    color: #fff;
+    padding: 20px;
+  }
+  .wrap { max-width: 1200px; margin: 0 auto; }
+  header {
+    text-align: center;
+    margin-bottom: 25px;
+    padding: 25px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 15px;
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+  header h1 { font-size: 2rem; }
+  header p { opacity: 0.7; font-size: 0.95rem; margin-top: 5px; }
+
+  .card {
+    background: #fff;
+    color: #2d3436;
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    margin-bottom: 20px;
+  }
+  .card h2 { color: #2d3436; margin-bottom: 15px; }
+
+  label { display: block; margin-bottom: 6px; font-weight: 600; }
+  input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #dfe6e9;
+    border-radius: 10px;
+    font-size: 1rem;
+    margin-bottom: 15px;
+  }
+  input:focus { outline: none; border-color: #2a5298; }
+
+  button {
+    background: linear-gradient(135deg, #2d3436, #1e3c72);
+    color: #fff;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 30px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  button:hover { transform: translateY(-2px); }
+  button.danger { background: linear-gradient(135deg, #d63031, #e17055); }
+  button.small { padding: 6px 14px; font-size: 0.85rem; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .login-screen { max-width: 450px; margin: 0 auto; }
+  .error-msg {
+    background: #ffe0e0; color: #c0392b;
+    padding: 10px 15px; border-radius: 8px;
+    margin-bottom: 15px; font-weight: 600;
+    border-left: 4px solid #d63031;
+  }
+
+  .stats {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .stat-box {
+    flex: 1;
+    min-width: 150px;
+    background: rgba(255,255,255,0.1);
+    padding: 15px;
+    border-radius: 12px;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+  .stat-box b { display: block; font-size: 2rem; color: #fdcb6e; }
+  .stat-box span { font-size: 0.85rem; opacity: 0.8; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    color: #2d3436;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+  }
+  th, td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ecf0f1;
+  }
+  th {
+    background: #2d3436;
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  tr:hover { background: #f8f9fa; }
+  .phone-cell { font-family: monospace; color: #2a5298; font-weight: 600; }
+  .phone-cell a { color: #2a5298; text-decoration: none; }
+  .phone-cell a:hover { text-decoration: underline; }
+  .name-cell { font-weight: 700; color: #1e3c72; }
+  .count-chip {
+    display: inline-block;
+    background: #ecf0f1;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #2d3436;
+  }
+  .date-cell { font-size: 0.85rem; color: #636e72; }
+
+  .toast {
+    position: fixed; top: 20px; right: 20px;
+    background: #00b894; color: #fff;
+    padding: 15px 25px; border-radius: 10px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+    z-index: 999; transform: translateX(400px);
+    transition: transform 0.3s; font-weight: 600;
+  }
+  .toast.show { transform: translateX(0); }
+  .toast.error { background: #d63031; }
+
+  .empty {
+    text-align: center; padding: 40px;
+    background: #fff; color: #636e72;
+    border-radius: 15px;
+  }
+
+  .info-bar {
+    background: #fff8dc;
+    color: #2d3436;
+    padding: 12px 15px;
+    border-radius: 10px;
+    border-left: 4px solid #fdcb6e;
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+  }
+
+  @media (max-width: 700px) {
+    table { font-size: 0.85rem; }
+    th, td { padding: 8px; }
+    .hide-mobile { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>🛡️ Admin Panel</h1>
+    <p>Sličica Hub — kontrola za roditelja/admina</p>
+  </header>
+
+  <!-- LOGIN -->
+  <section id="login-screen" class="login-screen">
+    <div class="card">
+      <h2>🔐 Admin login</h2>
+      <div id="loginError"></div>
+      <label for="adminPass">Admin lozinka:</label>
+      <input id="adminPass" type="password" placeholder="..." autocomplete="off" />
+      <button id="loginBtn" onclick="doLogin()">Uđi u admin panel</button>
+    </div>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section id="dashboard" style="display:none;">
+    <div class="info-bar">
+      ℹ️ Ovdje vidiš sve registrovane igrače sa telefonima roditelja. Telefon se NE prikazuje djeci — samo tebi. Ako neko šeprtlja, klikneš "Obriši" i nestaje.
+    </div>
+
+    <div class="stats">
+      <div class="stat-box"><b id="statTotal">0</b><span>Ukupno igrača</span></div>
+      <div class="stat-box"><b id="statHave">0</b><span>Duplikata</span></div>
+      <div class="stat-box"><b id="statNeed">0</b><span>Traženih</span></div>
+      <div class="stat-box"><b id="statToday">0</b><span>Danas aktivnih</span></div>
+    </div>
+
+    <div style="margin-bottom:15px; display:flex; gap:10px; flex-wrap:wrap;">
+      <button onclick="refresh()">🔄 Osvježi</button>
+      <button class="small" onclick="logout()" style="background:#636e72;">Odjavi se</button>
+      <a href="/" style="margin-left:auto; align-self:center; color:#fdcb6e; text-decoration:none; font-weight:600;">→ Otvori hub</a>
+    </div>
+
+    <div id="tableContainer"></div>
+  </section>
+
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+  const API = '/api/admin';
+  const LS_ADMIN = 'slicicaHub_admin';
+  let adminPass = localStorage.getItem(LS_ADMIN) || '';
+  let players = {};
+
+  function toast(msg, isError) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.toggle('error', !!isError);
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('loginError');
+    el.innerHTML = msg ? `<div class="error-msg">${msg}</div>` : '';
+  }
+
+  async function doLogin() {
+    showError('');
+    const pass = document.getElementById('adminPass').value.trim();
+    if (!pass) { showError('Upiši lozinku.'); return; }
+    const btn = document.getElementById('loginBtn');
+    btn.disabled = true; btn.textContent = '⏳ Provjeravam...';
+    try {
+      const res = await fetch(API + '/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Pass': pass },
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(()=>({error:'Greška'}));
+        throw new Error(data.error || 'Pogrešna lozinka');
+      }
+      adminPass = pass;
+      localStorage.setItem(LS_ADMIN, pass);
+      enterDashboard();
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Uđi u admin panel';
+    }
+  }
+
+  function logout() {
+    adminPass = '';
+    localStorage.removeItem(LS_ADMIN);
+    document.getElementById('dashboard').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'block';
+  }
+
+  async function enterDashboard() {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    await refresh();
+  }
+
+  async function refresh() {
+    try {
+      const res = await fetch(API + '/players', {
+        headers: { 'X-Admin-Pass': adminPass },
+        cache: 'no-store',
+      });
+      if (res.status === 401) {
+        toast('Sesija istekla', true);
+        logout();
+        return;
+      }
+      const data = await res.json();
+      players = data.players || {};
+      render();
+    } catch (err) {
+      toast('Greška: ' + err.message, true);
+    }
+  }
+
+  async function deletePlayer(name) {
+    if (!confirm(`Obrisati "${name}"? Ova akcija se ne može vratiti.`)) return;
+    try {
+      const res = await fetch(API + `/players?name=${encodeURIComponent(name)}`, {
+        method: 'DELETE',
+        headers: { 'X-Admin-Pass': adminPass },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Greška');
+      toast('🗑️ ' + name + ' obrisan');
+      await refresh();
+    } catch (err) {
+      toast('Greška: ' + err.message, true);
+    }
+  }
+
+  function formatDate(ts) {
+    if (!ts) return '-';
+    const d = new Date(ts);
+    return d.toLocaleDateString('sr-Latn-ME') + ' ' + d.toLocaleTimeString('sr-Latn-ME', {hour:'2-digit', minute:'2-digit'});
+  }
+
+  function render() {
+    const arr = Object.values(players).sort((a,b) => b.updated - a.updated);
+
+    document.getElementById('statTotal').textContent = arr.length;
+    document.getElementById('statHave').textContent = arr.reduce((s,p) => s + (p.have?.length || 0), 0);
+    document.getElementById('statNeed').textContent = arr.reduce((s,p) => s + (p.need?.length || 0), 0);
+    const today = new Date(); today.setHours(0,0,0,0);
+    document.getElementById('statToday').textContent = arr.filter(p => p.updated >= today.getTime()).length;
+
+    const container = document.getElementById('tableContainer');
+    if (arr.length === 0) {
+      container.innerHTML = '<div class="empty"><h3>Hub je prazan</h3><p>Niko se još nije registrovao.</p></div>';
+      return;
+    }
+
+    container.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Nadimak</th>
+            <th>Telefon roditelja</th>
+            <th>Ima duplo</th>
+            <th>Fali</th>
+            <th>Rijetke</th>
+            <th class="hide-mobile">Registrovan</th>
+            <th class="hide-mobile">Posljednje aktivan</th>
+            <th>Akcije</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${arr.map(p => `
+            <tr>
+              <td class="name-cell">${escapeHtml(p.name)}</td>
+              <td class="phone-cell"><a href="tel:${encodeURIComponent(p.phone)}">${escapeHtml(p.phone)}</a></td>
+              <td><span class="count-chip">${p.have?.length || 0}</span></td>
+              <td><span class="count-chip">${p.need?.length || 0}</span></td>
+              <td><span class="count-chip">${p.rare?.length || 0}</span></td>
+              <td class="date-cell hide-mobile">${formatDate(p.createdAt)}</td>
+              <td class="date-cell hide-mobile">${formatDate(p.updated)}</td>
+              <td><button class="danger small" onclick="deletePlayer('${escapeJs(p.name)}')">🗑️</button></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function escapeJs(s) {
+    return String(s).replace(/'/g, "\\'");
+  }
+
+  // Auto-login if stored
+  if (adminPass) {
+    enterDashboard().catch(() => {
+      logout();
+    });
+  }
+</script>
+</body>
+</html>
