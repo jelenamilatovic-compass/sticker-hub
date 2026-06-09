@@ -1,0 +1,9 @@
+name = "sticker-hub"
+compatibility_date = "2025-01-01"
+pages_build_output_dir = "."
+
+# KV namespace za podatke o igračima
+# Nakon kreiranja namespace-a, zalijepi ID ovdje (ili podesi u Cloudflare dashboard-u)
+[[kv_namespaces]]
+binding = "STICKERS"
+id = "ZAMIJENI_OVDJE_KV_ID"

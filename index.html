@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="sr-Latn-ME">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sličica Hub — Trading za drugare</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #00b894 100%);
+    min-height: 100vh;
+    color: #fff;
+    padding: 20px;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+
+  header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 30px 20px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255,255,255,0.2);
+    position: relative;
+  }
+  header h1 {
+    font-size: 2.6rem;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    letter-spacing: 1px;
+  }
+  header p {
+    margin-top: 8px;
+    opacity: 0.9;
+    font-size: 1.05rem;
+  }
+  .logo { font-size: 3rem; display: inline-block; animation: bounce 2s infinite; }
+  @keyframes bounce { 0%,100% {transform:translateY(0);} 50% {transform:translateY(-10px);} }
+
+  .sync-indicator {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 0.85rem;
+    opacity: 0.8;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .sync-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: #00b894;
+    box-shadow: 0 0 8px #00b894;
+    animation: pulse 2s infinite;
+  }
+  .sync-dot.offline { background: #d63031; box-shadow: 0 0 8px #d63031; animation: none; }
+  .sync-dot.syncing { background: #fdcb6e; box-shadow: 0 0 8px #fdcb6e; }
+  @keyframes pulse { 0%,100% {opacity:1;} 50% {opacity:0.4;} }
+
+  .tabs {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+  }
+  .tab {
+    background: rgba(255,255,255,0.15);
+    border: 2px solid rgba(255,255,255,0.3);
+    color: #fff;
+    padding: 12px 22px;
+    border-radius: 30px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  .tab:hover { background: rgba(255,255,255,0.25); transform: translateY(-2px); }
+  .tab.active {
+    background: #fff;
+    color: #1e3c72;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+  }
+
+  .page { display: none; animation: fadeIn 0.3s; }
+  .page.active { display: block; }
+  @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
+
+  .card {
+    background: rgba(255,255,255,0.95);
+    color: #2d3436;
+    border-radius: 16px;
+    padding: 25px;
+    margin-bottom: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  }
+  .card h2 {
+    color: #1e3c72;
+    margin-bottom: 15px;
+    font-size: 1.4rem;
+  }
+  .card h3 { color: #2a5298; margin-bottom: 10px; }
+
+  label { display: block; margin-bottom: 6px; font-weight: 600; color: #2d3436; }
+  input, textarea {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #dfe6e9;
+    border-radius: 10px;
+    font-size: 1rem;
+    margin-bottom: 15px;
+    font-family: inherit;
+    transition: border 0.2s;
+  }
+  input:focus, textarea:focus { outline: none; border-color: #2a5298; }
+  textarea { min-height: 80px; resize: vertical; }
+  small { display: block; color: #636e72; margin-top: -10px; margin-bottom: 12px; font-size: 0.85rem; }
+
+  button {
+    background: linear-gradient(135deg, #00b894, #00cec9);
+    color: #fff;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 30px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 15px rgba(0,184,148,0.4);
+  }
+  button:hover { transform: translateY(-2px); box-shadow: 0 7px 20px rgba(0,184,148,0.5); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  button.danger { background: linear-gradient(135deg, #d63031, #e17055); box-shadow: 0 4px 15px rgba(214,48,49,0.4); }
+  button.small { padding: 6px 14px; font-size: 0.85rem; }
+
+  .players-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 18px;
+  }
+  .player-card {
+    background: linear-gradient(135deg, #ffffff, #f5f7fa);
+    color: #2d3436;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    border-top: 5px solid #2a5298;
+    transition: transform 0.2s;
+    position: relative;
+  }
+  .player-card:hover { transform: translateY(-3px); }
+  .player-card.mine { border-top-color: #00b894; background: linear-gradient(135deg, #ffffff, #e6fff5); }
+  .player-card.mine::after {
+    content: '⭐ TI';
+    position: absolute;
+    top: 12px; right: 12px;
+    background: #00b894; color: #fff;
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+  .player-card h3 {
+    font-size: 1.3rem;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: linear-gradient(135deg, #00b894, #00cec9);
+    color: #fff; display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 1.1rem;
+  }
+  .stats { display: flex; gap: 10px; margin: 12px 0; font-size: 0.9rem; }
+  .stat {
+    background: #ecf0f1;
+    padding: 5px 10px;
+    border-radius: 8px;
+    flex: 1;
+    text-align: center;
+  }
+  .stat b { display: block; color: #2a5298; font-size: 1.2rem; }
+  .numbers-row { margin: 8px 0; font-size: 0.9rem; }
+  .numbers-row b { color: #1e3c72; }
+  .chip {
+    display: inline-block;
+    background: #74b9ff;
+    color: #fff;
+    padding: 2px 9px;
+    border-radius: 12px;
+    margin: 2px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  .chip.need { background: #fdcb6e; color: #2d3436; }
+  .chip.rare { background: #e17055; }
+
+  .match-card {
+    background: #fff;
+    color: #2d3436;
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 15px;
+    border-left: 6px solid #00b894;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+  }
+  .match-card.mine { border-left-color: #fdcb6e; background: linear-gradient(135deg, #fff, #fffbe6); }
+  .match-card h3 { color: #00b894; margin-bottom: 10px; }
+  .match-card.mine h3 { color: #e17055; }
+  .swap-arrow { font-size: 1.5rem; margin: 0 10px; color: #00b894; }
+  .swap-line { padding: 8px 0; border-bottom: 1px dashed #dfe6e9; }
+  .swap-line:last-child { border: none; }
+
+  .trending-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fff;
+    color: #2d3436;
+    padding: 15px 20px;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+  }
+  .trending-item:hover { transform: translateX(5px); }
+  .trending-rank {
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: #2a5298;
+    min-width: 50px;
+  }
+  .trending-info { flex: 1; }
+  .trending-info b { font-size: 1.2rem; color: #1e3c72; }
+  .fire { font-size: 1.5rem; }
+
+  .empty {
+    text-align: center;
+    padding: 40px 20px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 15px;
+    border: 2px dashed rgba(255,255,255,0.3);
+  }
+  .empty-icon { font-size: 4rem; margin-bottom: 15px; opacity: 0.7; }
+
+  .rules {
+    background: rgba(255,255,255,0.95);
+    color: #2d3436;
+    padding: 20px;
+    border-radius: 15px;
+    margin-top: 30px;
+    border-left: 5px solid #fdcb6e;
+  }
+  .rules h3 { color: #e17055; margin-bottom: 10px; }
+  .rules ul { padding-left: 20px; }
+  .rules li { margin: 5px 0; }
+
+  .stats-bar {
+    display: flex;
+    justify-content: space-around;
+    background: rgba(255,255,255,0.15);
+    padding: 15px;
+    border-radius: 15px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .stat-big { text-align: center; }
+  .stat-big b { display: block; font-size: 2rem; color: #fdcb6e; }
+  .stat-big span { font-size: 0.9rem; opacity: 0.9; }
+
+  .selector {
+    background: rgba(255,255,255,0.2);
+    border: 2px solid rgba(255,255,255,0.4);
+    color: #fff;
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 1rem;
+    width: 100%;
+    margin-bottom: 15px;
+    cursor: pointer;
+  }
+  .selector option { background: #1e3c72; color: #fff; }
+
+  .toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #00b894;
+    color: #fff;
+    padding: 15px 25px;
+    border-radius: 10px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+    z-index: 999;
+    transform: translateX(400px);
+    transition: transform 0.3s;
+    font-weight: 600;
+    max-width: 350px;
+  }
+  .toast.show { transform: translateX(0); }
+  .toast.error { background: #d63031; }
+
+  @media (max-width: 600px) {
+    header h1 { font-size: 1.8rem; }
+    .tab { padding: 10px 14px; font-size: 0.9rem; }
+    .swap-arrow { display: block; text-align: center; margin: 5px 0; }
+    .sync-indicator { position: static; justify-content: center; margin-top: 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <span class="logo">⚽</span>
+    <h1>Sličica Hub</h1>
+    <p>Mjesto đe svi drugari nađu s kim mogu mijenjati 🔄</p>
+    <div class="sync-indicator">
+      <span class="sync-dot" id="syncDot"></span>
+      <span id="syncText">Sinhronizovano</span>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-page="register">➕ Moja lista</button>
+    <button class="tab" data-page="players">👥 Igrači</button>
+    <button class="tab" data-page="matches">🤝 Trampe</button>
+    <button class="tab" data-page="trending">🔥 Trending</button>
+  </div>
+
+  <!-- REGISTRACIJA -->
+  <section class="page active" id="page-register">
+    <div class="card">
+      <h2>📝 Upiši se ili azuriraj svoju listu</h2>
+      <label for="playerName">Ime (kako te zovu drugari):</label>
+      <input id="playerName" type="text" placeholder="npr. Luka" maxlength="30" autocomplete="off" />
+
+      <label for="haveList">Brojevi koje IMAM duplo (mogu da mijenjam):</label>
+      <small>Razdvoji zarezom ili razmakom. Npr: 12, 45, 88, 102, 250</small>
+      <textarea id="haveList" placeholder="12, 45, 88..."></textarea>
+
+      <label for="needList">Brojevi koji mi FALE (treba mi):</label>
+      <small>Razdvoji zarezom ili razmakom. Npr: 7, 23, 99</small>
+      <textarea id="needList" placeholder="7, 23, 99..."></textarea>
+
+      <label for="rareList">Rijetke sličice (sjaj/legend) — ako imaš:</label>
+      <small>Razdvoji zarezom. Ove vrijede više!</small>
+      <textarea id="rareList" placeholder="npr. L1, L5, S20"></textarea>
+
+      <button id="saveBtn" onclick="saveMyList()">💾 Sačuvaj moju listu</button>
+      <button class="danger small" style="margin-left:10px" onclick="deleteMe()">🗑️ Obriši me</button>
+    </div>
+
+    <div class="rules">
+      <h3>📜 Pravila razmjene</h3>
+      <ul>
+        <li>1 obična za 1 običnu sličicu</li>
+        <li>Rijetka (sjaj/legend) vrijedi 3 obične</li>
+        <li>Razmjena samo kad obe strane imaju ono što drugom fali</li>
+        <li>Bez varanja — ko vara, ispada iz huba 😎</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- IGRAČI -->
+  <section class="page" id="page-players">
+    <div class="stats-bar">
+      <div class="stat-big"><b id="totalPlayers">0</b><span>Igrača</span></div>
+      <div class="stat-big"><b id="totalHave">0</b><span>Duplikata</span></div>
+      <div class="stat-big"><b id="totalNeed">0</b><span>Traženih</span></div>
+      <div class="stat-big"><b id="totalMatches">0</b><span>Trampi</span></div>
+    </div>
+    <div id="playersGrid" class="players-grid"></div>
+  </section>
+
+  <!-- TRAMPE -->
+  <section class="page" id="page-matches">
+    <div class="card">
+      <h2>🤝 Auto-pronađene trampe</h2>
+      <p style="margin-bottom:10px; color:#636e72;">Hub automatski poredi sve liste i nađe ko kome odgovara. Tvoje trampe su istaknute žuto.</p>
+      <label>Filter po igraču:</label>
+      <select id="matchFilter" class="selector" style="background:#fff; color:#2d3436; border-color:#dfe6e9;">
+        <option value="">Svi igrači</option>
+      </select>
+    </div>
+    <div id="matchesList"></div>
+  </section>
+
+  <!-- TRENDING -->
+  <section class="page" id="page-trending">
+    <div class="card">
+      <h2>🔥 Najtraženije sličice</h2>
+      <p style="color:#636e72;">Brojevi koje najviše drugara traži — ko ih ima, KRALJ je terena 👑</p>
+    </div>
+    <div id="trendingList"></div>
+
+    <div class="card" style="margin-top:20px;">
+      <h2>💎 Najčešće duplo (poplava)</h2>
+      <p style="color:#636e72;">Ovih brojeva ima na sve strane — najlakše ih je naći.</p>
+    </div>
+    <div id="floodList"></div>
+  </section>
+
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+  // ===== CONFIG =====
+  const API_URL = '/api/players';
+  const POLL_INTERVAL = 8000; // refresh from server every 8s
+  const MY_NAME_KEY = 'slicicaHub_myName';
+
+  // ===== STATE =====
+  let allPlayers = {}; // { lowercaseKey: { name, have, need, rare, updated } }
+  let myName = localStorage.getItem(MY_NAME_KEY) || '';
+
+  // ===== UI HELPERS =====
+  function setSyncStatus(state, text) {
+    const dot = document.getElementById('syncDot');
+    const txt = document.getElementById('syncText');
+    dot.classList.remove('offline', 'syncing');
+    if (state === 'offline') dot.classList.add('offline');
+    if (state === 'syncing') dot.classList.add('syncing');
+    txt.textContent = text;
+  }
+
+  function toast(msg, isError) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.toggle('error', !!isError);
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  function parseList(str) {
+    if (!str) return [];
+    return str.split(/[,\s\n;]+/)
+      .map(s => s.trim())
+      .filter(s => s.length > 0)
+      .filter((v,i,a) => a.indexOf(v) === i);
+  }
+
+  function initials(name) {
+    return name.split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0,2);
+  }
+
+  // ===== API =====
+  async function apiGet() {
+    setSyncStatus('syncing', 'Učitavam...');
+    try {
+      const res = await fetch(API_URL, { cache: 'no-store' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      allPlayers = data.players || {};
+      setSyncStatus('online', 'Sinhronizovano ✓');
+      return true;
+    } catch (err) {
+      setSyncStatus('offline', 'Offline — provjeri net');
+      console.error('GET failed:', err);
+      return false;
+    }
+  }
+
+  async function apiSave(player) {
+    setSyncStatus('syncing', 'Šaljem...');
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(player),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'HTTP ' + res.status);
+      setSyncStatus('online', 'Sinhronizovano ✓');
+      return data;
+    } catch (err) {
+      setSyncStatus('offline', 'Greška pri slanju');
+      throw err;
+    }
+  }
+
+  async function apiDelete(name) {
+    setSyncStatus('syncing', 'Brišem...');
+    try {
+      const res = await fetch(API_URL + '?name=' + encodeURIComponent(name), {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'HTTP ' + res.status);
+      setSyncStatus('online', 'Sinhronizovano ✓');
+      return data;
+    } catch (err) {
+      setSyncStatus('offline', 'Greška pri brisanju');
+      throw err;
+    }
+  }
+
+  // ===== TABS =====
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', async () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('page-' + tab.dataset.page).classList.add('active');
+      await apiGet();
+      renderAll();
+    });
+  });
+
+  // ===== SAVE / DELETE =====
+  async function saveMyList() {
+    const name = document.getElementById('playerName').value.trim();
+    if (!name) { toast('⚠️ Upiši ime!', true); return; }
+    const have = parseList(document.getElementById('haveList').value);
+    const need = parseList(document.getElementById('needList').value);
+    const rare = parseList(document.getElementById('rareList').value);
+
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Šaljem...';
+
+    try {
+      await apiSave({ name, have, need, rare });
+      myName = name;
+      localStorage.setItem(MY_NAME_KEY, name);
+      toast('✅ Sačuvano! Svi drugari sad vide tvoju listu');
+      await apiGet();
+      renderAll();
+    } catch (err) {
+      toast('❌ Greška: ' + err.message, true);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '💾 Sačuvaj moju listu';
+    }
+  }
+
+  async function deleteMe() {
+    const name = document.getElementById('playerName').value.trim();
+    if (!name) { toast('⚠️ Upiši ime koje brišeš', true); return; }
+    if (!confirm('Sigurno brišeš ' + name + '? Ova akcija se ne može vratiti.')) return;
+    try {
+      await apiDelete(name);
+      if (myName.toLowerCase() === name.toLowerCase()) {
+        myName = '';
+        localStorage.removeItem(MY_NAME_KEY);
+      }
+      toast('🗑️ ' + name + ' obrisan');
+      document.getElementById('playerName').value = '';
+      document.getElementById('haveList').value = '';
+      document.getElementById('needList').value = '';
+      document.getElementById('rareList').value = '';
+      await apiGet();
+      renderAll();
+    } catch (err) {
+      toast('❌ Greška: ' + err.message, true);
+    }
+  }
+
+  // Auto-fill if name matches existing player
+  document.getElementById('playerName').addEventListener('blur', () => {
+    const name = document.getElementById('playerName').value.trim().toLowerCase();
+    if (!name) return;
+    const p = allPlayers[name];
+    if (p) {
+      document.getElementById('haveList').value = (p.have || []).join(', ');
+      document.getElementById('needList').value = (p.need || []).join(', ');
+      document.getElementById('rareList').value = (p.rare || []).join(', ');
+      toast('📂 Učitana postojeća lista za ' + p.name);
+    }
+  });
+
+  function prefillFromMyName() {
+    if (!myName) return;
+    document.getElementById('playerName').value = myName;
+    const p = allPlayers[myName.toLowerCase()];
+    if (p) {
+      document.getElementById('haveList').value = (p.have || []).join(', ');
+      document.getElementById('needList').value = (p.need || []).join(', ');
+      document.getElementById('rareList').value = (p.rare || []).join(', ');
+    }
+  }
+
+  // ===== RENDER PLAYERS =====
+  function renderPlayers() {
+    const grid = document.getElementById('playersGrid');
+    const players = Object.values(allPlayers).sort((a,b) => b.updated - a.updated);
+
+    document.getElementById('totalPlayers').textContent = players.length;
+    document.getElementById('totalHave').textContent = players.reduce((s,p)=>s+(p.have?.length||0),0);
+    document.getElementById('totalNeed').textContent = players.reduce((s,p)=>s+(p.need?.length||0),0);
+
+    if (players.length === 0) {
+      grid.innerHTML = '<div class="empty"><div class="empty-icon">👥</div><p>Još niko nije upisan. Idi na <b>Moja lista</b> i budi prvi!</p></div>';
+      return;
+    }
+
+    grid.innerHTML = players.map(p => {
+      const isMine = myName && p.name.toLowerCase() === myName.toLowerCase();
+      return `
+        <div class="player-card ${isMine ? 'mine' : ''}">
+          <h3><span class="avatar">${initials(p.name)}</span> ${p.name}</h3>
+          <div class="stats">
+            <div class="stat"><b>${p.have?.length || 0}</b>ima duplo</div>
+            <div class="stat"><b>${p.need?.length || 0}</b>fali</div>
+            <div class="stat"><b>${p.rare?.length || 0}</b>rijetke</div>
+          </div>
+          ${p.have?.length ? `<div class="numbers-row"><b>Mijenja:</b> ${p.have.slice(0,20).map(n=>`<span class="chip">${n}</span>`).join('')}${p.have.length>20?` <i>+${p.have.length-20}</i>`:''}</div>` : ''}
+          ${p.need?.length ? `<div class="numbers-row"><b>Treba:</b> ${p.need.slice(0,20).map(n=>`<span class="chip need">${n}</span>`).join('')}${p.need.length>20?` <i>+${p.need.length-20}</i>`:''}</div>` : ''}
+          ${p.rare?.length ? `<div class="numbers-row"><b>💎 Rijetke:</b> ${p.rare.map(n=>`<span class="chip rare">${n}</span>`).join('')}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ===== MATCH ENGINE =====
+  function findMatches() {
+    const players = Object.values(allPlayers);
+    const matches = [];
+
+    for (let i = 0; i < players.length; i++) {
+      for (let j = i+1; j < players.length; j++) {
+        const A = players[i], B = players[j];
+        const aGivesB = (A.have || []).filter(n => (B.need || []).includes(n));
+        const bGivesA = (B.have || []).filter(n => (A.need || []).includes(n));
+        if (aGivesB.length > 0 && bGivesA.length > 0) {
+          matches.push({ a: A, b: B, aGivesB, bGivesA, score: Math.min(aGivesB.length, bGivesA.length) });
+        }
+      }
+    }
+    matches.sort((x,y) => y.score - x.score);
+    return matches;
+  }
+
+  function renderMatches() {
+    const matches = findMatches();
+    document.getElementById('totalMatches').textContent = matches.length;
+
+    const filterEl = document.getElementById('matchFilter');
+    const selected = filterEl.value;
+    const players = Object.values(allPlayers).map(p => p.name).sort();
+    filterEl.innerHTML = '<option value="">Svi igrači</option>' +
+      players.map(n => `<option value="${n}" ${n===selected?'selected':''}>${n}${myName && n.toLowerCase()===myName.toLowerCase()?' (TI)':''}</option>`).join('');
+
+    const list = document.getElementById('matchesList');
+    let filtered = matches;
+    if (selected) {
+      filtered = matches.filter(m => m.a.name === selected || m.b.name === selected);
+    }
+    // Sort: mine first
+    if (myName) {
+      const mine = myName.toLowerCase();
+      filtered = filtered.slice().sort((x,y) => {
+        const xMine = x.a.name.toLowerCase() === mine || x.b.name.toLowerCase() === mine;
+        const yMine = y.a.name.toLowerCase() === mine || y.b.name.toLowerCase() === mine;
+        if (xMine && !yMine) return -1;
+        if (!xMine && yMine) return 1;
+        return y.score - x.score;
+      });
+    }
+
+    if (filtered.length === 0) {
+      list.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div><p>Još nema poklapanja. Treba bar 2 igrača sa unesenim listama.</p></div>';
+      return;
+    }
+
+    list.innerHTML = filtered.map(m => {
+      const isMine = myName && (m.a.name.toLowerCase() === myName.toLowerCase() || m.b.name.toLowerCase() === myName.toLowerCase());
+      return `
+        <div class="match-card ${isMine ? 'mine' : ''}">
+          <h3>${isMine ? '⭐' : '🤝'} ${m.a.name} ↔️ ${m.b.name} <small style="color:#636e72;">(${m.score} para)</small></h3>
+          <div class="swap-line">
+            <b>${m.a.name}</b> daje: ${m.aGivesB.map(n=>`<span class="chip">${n}</span>`).join('')}
+            <span class="swap-arrow">➡️</span>
+            <b>${m.b.name}</b>
+          </div>
+          <div class="swap-line">
+            <b>${m.b.name}</b> daje: ${m.bGivesA.map(n=>`<span class="chip">${n}</span>`).join('')}
+            <span class="swap-arrow">➡️</span>
+            <b>${m.a.name}</b>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  document.getElementById('matchFilter').addEventListener('change', renderMatches);
+
+  // ===== TRENDING =====
+  function renderTrending() {
+    const players = Object.values(allPlayers);
+    const needCount = {};
+    const haveCount = {};
+    players.forEach(p => {
+      (p.need || []).forEach(n => needCount[n] = (needCount[n] || 0) + 1);
+      (p.have || []).forEach(n => haveCount[n] = (haveCount[n] || 0) + 1);
+    });
+
+    const trending = Object.entries(needCount).sort((a,b) => b[1] - a[1]).slice(0, 20);
+    const flood = Object.entries(haveCount).sort((a,b) => b[1] - a[1]).slice(0, 20);
+
+    const trendEl = document.getElementById('trendingList');
+    if (trending.length === 0) {
+      trendEl.innerHTML = '<div class="empty"><div class="empty-icon">🔥</div><p>Još nema podataka. Dodaj svoju listu!</p></div>';
+    } else {
+      trendEl.innerHTML = trending.map(([num, count], i) => {
+        const fire = count >= 5 ? '🔥🔥🔥🔥' : count >= 3 ? '🔥🔥🔥' : count >= 2 ? '🔥🔥' : '🔥';
+        const haveIt = haveCount[num] || 0;
+        return `
+          <div class="trending-item">
+            <div class="trending-rank">#${i+1}</div>
+            <div class="trending-info">
+              <b>Broj ${num}</b><br>
+              <small>${count} drugara traži • ${haveIt > 0 ? `${haveIt} ima duplo ✅` : 'NIKO nema duplo ❌'}</small>
+            </div>
+            <div class="fire">${fire}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    const floodEl = document.getElementById('floodList');
+    if (flood.length === 0) {
+      floodEl.innerHTML = '<div class="empty"><div class="empty-icon">💎</div><p>Nema podataka.</p></div>';
+    } else {
+      floodEl.innerHTML = flood.map(([num, count], i) => `
+        <div class="trending-item">
+          <div class="trending-rank">#${i+1}</div>
+          <div class="trending-info">
+            <b>Broj ${num}</b><br>
+            <small>${count} drugara ima duplo</small>
+          </div>
+          <div class="fire">💎</div>
+        </div>
+      `).join('');
+    }
+  }
+
+  function renderAll() {
+    renderPlayers();
+    renderMatches();
+    renderTrending();
+  }
+
+  // ===== POLLING =====
+  let pollTimer = null;
+  function startPolling() {
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(async () => {
+      if (document.hidden) return; // don't poll when tab not visible
+      const ok = await apiGet();
+      if (ok) renderAll();
+    }, POLL_INTERVAL);
+  }
+
+  // ===== INIT =====
+  (async function init() {
+    await apiGet();
+    prefillFromMyName();
+    renderAll();
+    startPolling();
+  })();
+
+  // Pause polling when offline, resume when back
+  window.addEventListener('online', () => { apiGet().then(renderAll); });
+  window.addEventListener('offline', () => setSyncStatus('offline', 'Offline'));
+</script>
+</body>
+</html>
